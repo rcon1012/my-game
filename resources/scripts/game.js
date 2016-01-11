@@ -6,10 +6,12 @@ const GAME_WIDTH = 640;
 
 const CHARACTER_WIDTH = 50;
 const CHARACTER_HEIGHT = 100;
+const PUNCH_WIDTH = 50;
 
 const ROCKET_HEIGHT = 25;
 const ROCKET_WIDTH = 172;
 const NUM_ROCKETS = 10;
+
 var game = new Phaser.Game(GAME_WIDTH, GAME_HEIGHT, Phaser.AUTO, "game-canvas", { preload: preload, create: create, update: update, render: render });
 
 function preload () {
@@ -17,10 +19,12 @@ function preload () {
     game.load.image('rocket', 'resources/img/rocket.png');
 }
 var character;
+var fist;
 var rockets;
 var wasd;
 var jumpButton;
 var pauseKey;
+var punchKey;
 function create () {
     // create world/physics
     game.physics.startSystem(Phaser.Physics.ARCADE);
@@ -34,6 +38,8 @@ function create () {
     character.body.gravity.y = 500;
     character.body.maxVelocity.y = 500;
     character.body.drag.x = 400;
+    // set anchor to top left of character
+    character.anchor.setTo(0, 0);
 
     // add rockets
     rockets = game.add.physicsGroup(Phaser.Physics.ARCADE);
@@ -56,6 +62,8 @@ function create () {
 
     pauseKey = game.input.keyboard.addKey(Phaser.Keyboard.P);
     pauseKey.onDown.add(togglePause, game);
+    punchKey = game.input.keyboard.addKey(Phaser.Keyboard.J);
+    punchKey.onDown.add(punch, game);
 }
 
 
@@ -63,17 +71,35 @@ function togglePause() {
     game.physics.arcade.isPaused = (game.physics.arcade.isPaused) ? false : true;
 }
 
+function punch() {
+    // check if last punch is finished
+    if(fist != null) {
+        return;
+    }
+    // add character to game
+    fist = game.add.sprite(character.x + CHARACTER_WIDTH, character.y, "character");
+    character.addChild(fist);
+    fist.x = CHARACTER_WIDTH;
+    fist.y = 0;
+    game.time.events.add(Phaser.Timer.SECOND, removePunch, this);
+}
+
+function removePunch() {
+    fist.kill();
+    fist = null;
+}
+
 function update() {
     // spawn rockets
-    if(game.rnd.between(1, 100) % 100 == 0) {
-        var rocketY = game.rnd.between(0 + CHARACTER_HEIGHT, GAME_HEIGHT - ROCKET_HEIGHT);
+    if(game.rnd.between(1, 200) % 200 == 0) {
+        var rocketY = game.rnd.between(ROCKET_HEIGHT, GAME_HEIGHT - ROCKET_HEIGHT);
         rockets.create(game.world.width, rocketY, "rocket");
         rockets.setAll("body.immovable", true);
         rockets.setAll("body.allowGravity", false);
         rockets.setAll("body.velocity.x", -100);
     }
 
-
+    fistRocketCollision();
 
     // collision with rockets
     var isColliding = game.physics.arcade.collide(character, rockets);
@@ -82,6 +108,7 @@ function update() {
     if (wasd.left.isDown)
     {
         character.body.velocity.x = -300;
+
     }
     else if (wasd.right.isDown)
     {
@@ -90,7 +117,7 @@ function update() {
 
     if (wasd.up.isDown && !character.body.onFloor())
     {
-        character.body.acceleration.y = -500;
+        character.body.acceleration.y = -400;
     }
     else if (wasd.down.isDown && !character.body.onFloor())
     {
@@ -100,6 +127,18 @@ function update() {
     {
         character.body.velocity.y = -500;
     }
+}
+
+function fistRocketCollision() {
+    // null check fist
+    if(fist == null) {
+        return;
+    }
+    rockets.forEachAlive(function(rocket) {
+        if(Phaser.Rectangle.intersects(fist.getBounds(), rocket.getBounds())) {
+            rocket.kill();
+        }
+    }, this);
 }
 
 function render() {
