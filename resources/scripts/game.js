@@ -15,6 +15,7 @@ const NUM_ROCKETS = 10;
 var game = new Phaser.Game(GAME_WIDTH, GAME_HEIGHT, Phaser.AUTO, "game-canvas", { preload: preload, create: create, update: update, render: render });
 
 function preload () {
+    game.load.spritesheet('character_animation', 'resources/img/spritesheet.png', 47, 42, 6);
     game.load.image('character', 'resources/img/character.png');
     game.load.image('rocket', 'resources/img/rocket.png');
 }
@@ -27,11 +28,14 @@ var pauseKey;
 var punchKey;
 function create () {
     // create world/physics
+    game.stage.backgroundColor = '#FFFFFF';
     game.physics.startSystem(Phaser.Physics.ARCADE);
     game.physics.arcade.gravity.y = 300;
 
     // add character to game
-    character = game.add.sprite(game.world.centerX/2, game.world.centerY/2, 'character');
+    character = game.add.sprite(game.world.centerX/2, game.world.centerY/2, 'character_animation');
+    character.animations.add("run");
+    character.animations.play("run", 8, true);
     game.physics.enable(character, Phaser.Physics.ARCADE);
     // TODO: change collideWorldBounds to false
     character.body.collideWorldBounds = true;
@@ -48,6 +52,8 @@ function create () {
     rockets.setAll("body.immovable", true);
     rockets.setAll("body.allowGravity", false);
     rockets.setAll("body.velocity.x", -100);
+    rockets.setAll("outOfBoundsKill", true);
+    rockets.setAll("checkWorldBounds", true);
 
 
 
